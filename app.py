@@ -6,6 +6,12 @@ import time
 from datetime import date, timedelta
 import spacy
 from langdetect import detect
+from dotenv import load_dotenv
+import os
+
+#load github token from .env
+load_dotenv()
+token = os.environ.get("GITHUB_TOKEN")
 
 #Configure API request components
 base_url = 'https://api.crossref.org/works'
