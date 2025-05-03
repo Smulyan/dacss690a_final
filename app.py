@@ -86,3 +86,24 @@ df = pd.json_normalize(results)
 df["language"] = df["abstract"].apply(detect_language)
 df["topic"] = df["abstract"].apply(classify_topic)
 
+#generate summary statistics
+
+# Create a new DataFrame to store the daily summary
+daily_summary = pd.DataFrame()
+
+topic_counts = df['topic'].value_counts().to_dict()
+topic_percentages = (df['topic'].value_counts(normalize=True) * 100).to_dict()
+language_counts = df['language'].value_counts().to_dict()
+language_percentages = (df['language'].value_counts(normalize=True) * 100).to_dict()
+
+# Create a dictionary for the new row
+new_row = {
+    'date': yesterday_str,
+    **topic_counts,
+    **topic_percentages,
+    **language_counts,
+    **language_percentages
+}
+
+# Append the new row to 'daily_summary' dataframe
+daily_summary = pd.concat([daily_summary, pd.DataFrame([new_row])], ignore_index=True)
