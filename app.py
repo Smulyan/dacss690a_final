@@ -8,10 +8,7 @@ import spacy
 from langdetect import detect
 from dotenv import load_dotenv
 import os
-
-#load github token from .env
-load_dotenv()
-token = os.environ.get("GITHUB_TOKEN")
+import subprocess
 
 #Configure API request components
 base_url = 'https://api.crossref.org/works'
@@ -92,10 +89,11 @@ df = pd.json_normalize(results)
 df["language"] = df["abstract"].apply(detect_language)
 df["topic"] = df["abstract"].apply(classify_topic)
 
+
 #generate summary statistics
 
-# Create a new DataFrame to store the daily summary
-daily_summary = pd.DataFrame()
+# Path to the CSV file
+csv_path = "daily_summary.csv"
 
 topic_counts = df['topic'].value_counts().to_dict()
 topic_percentages = (df['topic'].value_counts(normalize=True) * 100).to_dict()
@@ -111,5 +109,30 @@ new_row = {
     **language_percentages
 }
 
-# Append the new row to 'daily_summary' dataframe
-daily_summary = pd.concat([daily_summary, pd.DataFrame([new_row])], ignore_index=True)
+# Check if the CSV already exists
+if os.path.exists(csv_path):
+    # Load existing data and append
+    daily_summary = pd.read_csv(csv_path)
+    daily_summary = pd.concat([daily_summary, pd.DataFrame([new_row])], ignore_index=True)
+else:
+    # Create a new DataFrame if the file doesn't exist
+    daily_summary = pd.DataFrame([new_row])
+
+# Save the updated data back to CSV
+daily_summary.to_csv(csv_path, index=False)
+
+
+
+#push csv to github repo
+load_dotenv()
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_REPO = "github.com/Smulyan/dacss690a_final.git"  # <-- Replace with yours
+REPO_DIR = "/Users/shaynsmulyan/PycharmProjects/dacss690a_final"  # Local clone path
+
+os.chdir(REPO_DIR)
+
+# Git operations
+subprocess.run(["git", "pull"])
+subprocess.run(["git", "add", "daily_summary.csv"])
+subprocess.run(["git", "commit", "-m", f"Update summary for {yesterday_str}"])
+subprocess.run(["git", "push", f"https://{GITHUB_TOKEN}@{GITHUB_REPO}"])
