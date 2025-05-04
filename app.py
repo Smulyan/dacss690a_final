@@ -101,9 +101,9 @@ expected_topics = [
 ]
 
 expected_languages = [
-    "af", "ar", "bg", "ca", "cs", "da", "de", "el", "en", "es", "et", "fa", "fi", "fr", "gu", "hi", "hr", "hu", "id",
-    "it", "ja", "kn", "ko", "lt", "lv", "mk", "ne", "nl", "no", "pl", "pt", "ro", "ru", "sk", "sl", "so" "sq", "sv",
-    "th", "tl", "tr", "uk", "vi", "zh", "zh-cn"
+    "af", "ar", "bg", "bn", "ca", "cs", "cy", "da", "de", "el", "en", "es", "et", "fa", "fi", "fr", "gu", "he", "hi", "hr",
+    "hu", "id", "it", "ja", "kn", "ko", "lt", "lv", "mk", "ne", "nl", "no", "pl", "pt", "ro", "ru", "sk", "sl", "so",
+    "sq", "sv", "sw", "th", "tl", "tr", "uk", "vi", "zh", "zh-cn"
 ]
 
 #function to ensure that columns are consistent day to day
