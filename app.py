@@ -95,19 +95,45 @@ df["topic"] = df["abstract"].apply(classify_topic)
 # Path to the CSV file
 csv_path = "daily_summary.csv"
 
+expected_topics = [
+    "computer science", "biology", "physics", "chemistry",
+    "mathematics", "engineering", "medicine", "social sciences", "humanities"
+]
+
+expected_languages = [
+    "af", "ar", "bg", "ca", "de", "el", "en", "es", "et", "fi", "fr", "hi", "hr", "hu", "id", "it", "lt",
+    "lv", "ja", "ko", "mk", "nl", "no", "pl", "pt", "ru", "sv", "th", "tr", "uk", "vi", "zh", "zh-cn"
+]
+
+#function to ensure that columns are consistent day to day
+def create_consistent_summary_row(date_str, topic_counts, topic_percentages, language_counts, language_percentages):
+    row = {'date': date_str}
+
+    # Fill in topic counts
+    for topic in expected_topics:
+        row[topic] = topic_counts.get(topic, 0)
+        row[f"{topic}_pct"] = round(topic_percentages.get(topic, 0), 2)
+
+    # Fill in language counts
+    for lang in expected_languages:
+        row[lang] = language_counts.get(lang, 0)
+        row[f"{lang}_pct"] = round(language_percentages.get(lang, 0), 2)
+
+    return row
+
 topic_counts = df['topic'].value_counts().to_dict()
 topic_percentages = (df['topic'].value_counts(normalize=True) * 100).to_dict()
 language_counts = df['language'].value_counts().to_dict()
 language_percentages = (df['language'].value_counts(normalize=True) * 100).to_dict()
 
 # Create a dictionary for the new row
-new_row = {
-    'date': yesterday_str,
-    **topic_counts,
-    **topic_percentages,
-    **language_counts,
-    **language_percentages
-}
+new_row = create_consistent_summary_row(
+    yesterday_str,
+    topic_counts,
+    topic_percentages,
+    language_counts,
+    language_percentages
+)
 
 # Check if the CSV already exists
 if os.path.exists(csv_path):
