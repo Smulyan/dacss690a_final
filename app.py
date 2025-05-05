@@ -10,156 +10,141 @@ from dotenv import load_dotenv
 import os
 import subprocess
 
-#Configure API request components
-base_url = 'https://api.crossref.org/works'
-yesterday = date.today() - timedelta(days=1)
-yesterday_str = yesterday.strftime('%Y-%m-%d')
-filters = f"filter=has-abstract:true,type:journal-article,type:posted-content,type:proceedings-article,from-created-date:{yesterday_str},until-created-date:{yesterday_str}"
-metadata_fields = 'select=DOI,title,container-title,abstract,author,published'
-num_rows = 'rows=1000'
-cursor = '*'
-
-#install medium English language model
+# Global config
 nlp = spacy.load("en_core_web_md")
-
-#topic candidate labels
 candidate_labels = ["computer science", "biology", "physics", "chemistry", "mathematics", "engineering", "medicine", "social sciences", "humanities"]
+expected_topics = candidate_labels
+expected_languages = sorted(set([
+    "af", "ar", "bg", "bn", "ca", "cs", "cy", "da", "de", "el", "en", "es", "et", "fa", "fi", "fr", "gu",
+    "he", "hi", "hr", "hu", "id", "it", "ja", "kn", "ko", "lt", "lv", "mk", "ne", "nl", "no", "pl", "pt",
+    "ro", "ru", "sk", "sl", "so", "sq", "sv", "sw", "th", "tl", "tr", "uk", "vi", "zh", "zh-cn"
+]))
 
-#topic classification function
-def classify_topic(text):
-  try:
-    doc = nlp(text)
+# --- ETL Functions ---
 
-    #use similarity scores to get closest topic
-    scores = {label: doc.similarity(nlp(label)) for label in candidate_labels}
-    topic = max(scores, key=scores.get)
-    return topic
-  except Exception as e:
-    print(f"Error classifying topic: {e}")
-    return None
+def extract_data():
+    base_url = 'https://api.crossref.org/works'
+    yesterday = date.today() - timedelta(days=1)
+    filters = (
+        f"filter=has-abstract:true,type:journal-article,type:posted-content,"
+        f"type:proceedings-article,from-created-date:{yesterday},until-created-date:{yesterday}"
+    )
+    metadata_fields = 'select=DOI,title,container-title,abstract,author,published'
+    cursor = '*'
+    num_rows = 'rows=1000'
+    results = []
+    prev_len = 0
 
-#langauge detection function
+    while True:
+        url = f"{base_url}?{filters}&{metadata_fields}&{num_rows}&cursor={cursor}"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            page_results = response.json()
+            items = page_results['message']['items']
+            results.extend(items)
+
+            if len(results) == prev_len:
+                break
+            prev_len = len(results)
+            cursor = page_results['message']['next-cursor']
+            time.sleep(1)
+        except requests.RequestException as e:
+            print(f"Request error: {e}")
+            break
+
+    return pd.json_normalize(results), yesterday.strftime('%Y-%m-%d')
+
+
 def detect_language(text):
-  try:
-    language = detect(text)
-    return language
-  except Exception as e:
-    print(f"Error detecting language: {e}")
-    return None
+    try:
+        return detect(text)
+    except:
+        return None
 
+def classify_topic(text):
+    try:
+        doc = nlp(text)
+        scores = {label: doc.similarity(nlp(label)) for label in candidate_labels}
+        return max(scores, key=scores.get)
+    except:
+        return None
 
-#API call for yesterday's new items that contain abstracts
-results = [] #list to store data from all pages
-previous_len = 0 #variable to store previous results length
+def transform_data(df):
+    df["language"] = df["abstract"].apply(detect_language)
+    df["topic"] = df["abstract"].apply(classify_topic)
+    return df
 
-while True:
-  url = base_url + '?' + filters + '&' + metadata_fields + '&' + num_rows + '&cursor=' + cursor
+def create_consistent_summary_row(date_str, df):
+    topic_counts = df['topic'].value_counts().to_dict()
+    topic_percentages = (df['topic'].value_counts(normalize=True) * 100).to_dict()
+    language_counts = df['language'].value_counts().to_dict()
+    language_percentages = (df['language'].value_counts(normalize=True) * 100).to_dict()
 
-  try:
-    response = requests.get(url)
-    response.raise_for_status() #check for request errors
-
-
-    page_results = response.json()
-
-    #extract items from page and append to full results list
-    items = page_results['message']['items']
-    results.extend(items)
-
-    #check if length of full results has increased
-    current_len = len(results)
-    if current_len == previous_len:
-      break #exit the loop if no increase
-    else:
-      previous_len = current_len #update the previous length to compare next loop to
-
-    cursor = page_results['message']['next-cursor']
-
-    time.sleep(1) #one second delay before next request
-
-  except requests.exceptions.RequestException as e:
-    print(f"Request Error: {e}")
-    raise
-
-
-#create dataframe from full results list
-df = pd.json_normalize(results)
-
-#populate language and topic fields of the dataframe
-df["language"] = df["abstract"].apply(detect_language)
-df["topic"] = df["abstract"].apply(classify_topic)
-
-
-#generate summary statistics
-
-# Path to the CSV file
-csv_path = "daily_summary.csv"
-
-expected_topics = [
-    "computer science", "biology", "physics", "chemistry",
-    "mathematics", "engineering", "medicine", "social sciences", "humanities"
-]
-
-expected_languages = [
-    "af", "ar", "bg", "bn", "ca", "cs", "cy", "da", "de", "el", "en", "es", "et", "fa", "fi", "fr", "gu", "he", "hi", "hr",
-    "hu", "id", "it", "ja", "kn", "ko", "lt", "lv", "mk", "ne", "nl", "no", "pl", "pt", "ro", "ru", "sk", "sl", "so",
-    "sq", "sv", "sw", "th", "tl", "tr", "uk", "vi", "zh", "zh-cn"
-]
-
-#function to ensure that columns are consistent day to day
-def create_consistent_summary_row(date_str, topic_counts, topic_percentages, language_counts, language_percentages):
     row = {'date': date_str}
-
-    # Fill in topic counts
     for topic in expected_topics:
         row[topic] = topic_counts.get(topic, 0)
         row[f"{topic}_pct"] = round(topic_percentages.get(topic, 0), 2)
 
-    # Fill in language counts
     for lang in expected_languages:
         row[lang] = language_counts.get(lang, 0)
         row[f"{lang}_pct"] = round(language_percentages.get(lang, 0), 2)
 
     return row
 
-topic_counts = df['topic'].value_counts().to_dict()
-topic_percentages = (df['topic'].value_counts(normalize=True) * 100).to_dict()
-language_counts = df['language'].value_counts().to_dict()
-language_percentages = (df['language'].value_counts(normalize=True) * 100).to_dict()
+def update_summary_csv(df, date_str, csv_path="daily_summary.csv"):
+    new_row = create_consistent_summary_row(date_str, df)
 
-# Create a dictionary for the new row
-new_row = create_consistent_summary_row(
-    yesterday_str,
-    topic_counts,
-    topic_percentages,
-    language_counts,
-    language_percentages
-)
+    if os.path.exists(csv_path):
+        summary = pd.read_csv(csv_path)
+        summary = pd.concat([summary, pd.DataFrame([new_row])], ignore_index=True)
+    else:
+        summary = pd.DataFrame([new_row])
 
-# Check if the CSV already exists
-if os.path.exists(csv_path):
-    # Load existing data and append
-    daily_summary = pd.read_csv(csv_path)
-    daily_summary = pd.concat([daily_summary, pd.DataFrame([new_row])], ignore_index=True)
-else:
-    # Create a new DataFrame if the file doesn't exist
-    daily_summary = pd.DataFrame([new_row])
+    summary.to_csv(csv_path, index=False)
 
-# Save the updated data back to CSV
-daily_summary.to_csv(csv_path, index=False)
+def push_to_github(date_str):
+    try:
+        load_dotenv()
+        GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+        GITHUB_REPO = "github.com/Smulyan/dacss690a_final.git"
+        REPO_DIR = "/Users/shaynsmulyan/PycharmProjects/dacss690a_final"
 
+        if not GITHUB_TOKEN:
+            raise ValueError("GitHub token not found in environment variables.")
 
+        os.chdir(REPO_DIR)
 
-#push csv to github repo
-load_dotenv()
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-GITHUB_REPO = "github.com/Smulyan/dacss690a_final.git"  # <-- Replace with yours
-REPO_DIR = "/Users/shaynsmulyan/PycharmProjects/dacss690a_final"  # Local clone path
+        print("Pulling latest changes from GitHub...")
+        subprocess.run(["git", "pull"], check=True)
 
-os.chdir(REPO_DIR)
+        print("Staging CSV file...")
+        subprocess.run(["git", "add", "daily_summary.csv"], check=True)
 
-# Git operations
-subprocess.run(["git", "pull"])
-subprocess.run(["git", "add", "daily_summary.csv"])
-subprocess.run(["git", "commit", "-m", f"Update summary for {yesterday_str}"])
-subprocess.run(["git", "push", f"https://{GITHUB_TOKEN}@{GITHUB_REPO}"])
+        print(f"Committing changes for {date_str}...")
+        subprocess.run(["git", "commit", "-m", f"Update summary for {date_str}"], check=True)
+
+        print("Pushing to GitHub...")
+        push_url = f"https://{GITHUB_TOKEN}@{GITHUB_REPO}"
+        subprocess.run(["git", "push", push_url], check=True)
+
+        print("✅ Successfully pushed to GitHub.")
+
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Git command failed: {e}")
+    except Exception as e:
+        print(f"❌ An error occurred: {e}")
+
+# --- Main ---
+
+def main():
+    df, date_str = extract_data()
+    if not df.empty:
+        df = transform_data(df)
+        update_summary_csv(df, date_str)
+        push_to_github(date_str)
+    else:
+        print("No data extracted for the given date.")
+
+if __name__ == "__main__":
+    main()
