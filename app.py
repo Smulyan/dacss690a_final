@@ -9,6 +9,7 @@ from langdetect import detect
 from dotenv import load_dotenv
 import os
 import subprocess
+from prefect import flow
 
 # Global config
 nlp = spacy.load("en_core_web_md")
@@ -137,6 +138,7 @@ def push_to_github(date_str):
 
 # --- Main ---
 
+@flow
 def main():
     df, date_str = extract_data()
     if not df.empty:

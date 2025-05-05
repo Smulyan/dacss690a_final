@@ -8,3 +8,4 @@ pandas
 jsonschema
 datetime
 python-dotenv
+prefect>=2.0
