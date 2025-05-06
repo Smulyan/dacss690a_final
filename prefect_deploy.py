@@ -1,8 +1,9 @@
-from app import main
+from prefect import serve
+from prefect.server.schemas.schedules import CronSchedule
+from app import main_flow
 
 if __name__ == "__main__":
-    main.serve(
+    main_flow.serve(
         name="Daily ETL",
-        work_pool_name="default",
-        tags=["etl", "daily"]
+        Schedule=CronSchedule(cron="0 12 * * *", timezone="America/New_York")
     )

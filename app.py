@@ -139,7 +139,7 @@ def push_to_github(date_str):
 # --- Main ---
 
 @flow
-def main():
+def main_flow():
     df, date_str = extract_data()
     if not df.empty:
         df = transform_data(df)
@@ -149,4 +149,4 @@ def main():
         print("No data extracted for the given date.")
 
 if __name__ == "__main__":
-    main()
+    main_flow()
