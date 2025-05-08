@@ -1,3 +1,21 @@
+import subprocess
+import sys
+import os
+
+def install_requirements():
+    try:
+        req_file = "requirements.txt"
+        if os.path.exists(req_file):
+            print("Installing requirements from requirements.txt...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+        else:
+            print("No requirements.txt found; skipping package installation.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install requirements: {e}")
+        sys.exit(1)
+
+install_requirements()
+
 import requests
 import numpy as np
 import pandas as pd
@@ -7,8 +25,6 @@ from datetime import date, timedelta
 import spacy
 from langdetect import detect
 from dotenv import load_dotenv
-import os
-import subprocess
 from prefect import flow
 
 # Global config
