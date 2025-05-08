@@ -2,19 +2,19 @@ import subprocess
 import sys
 import os
 
-# def install_requirements():
-#     try:
-#         req_file = "requirements.txt"
-#         if os.path.exists(req_file):
-#             print("Installing requirements from requirements.txt...")
-#             subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
-#         else:
-#             print("No requirements.txt found; skipping package installation.")
-#     except subprocess.CalledProcessError as e:
-#         print(f"Failed to install requirements: {e}")
-#         sys.exit(1)
-#
-# install_requirements()
+def install_requirements():
+    try:
+        req_file = "requirements.txt"
+        if os.path.exists(req_file):
+            print("Installing requirements from requirements.txt...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+        else:
+            print("No requirements.txt found; skipping package installation.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install requirements: {e}")
+        sys.exit(1)
+
+install_requirements()
 
 import requests
 import numpy as np
@@ -25,7 +25,7 @@ from datetime import date, timedelta
 import spacy
 from langdetect import detect
 from dotenv import load_dotenv
-from prefect import flow
+from prefect import task, flow
 
 # Global config
 nlp = spacy.load("en_core_web_md")
@@ -38,7 +38,7 @@ expected_languages = sorted(set([
 ]))
 
 # --- ETL Functions ---
-
+@task
 def extract_data():
     base_url = 'https://api.crossref.org/works'
     yesterday = date.today() - timedelta(days=1)
@@ -87,6 +87,7 @@ def classify_topic(text):
     except:
         return None
 
+@task
 def transform_data(df):
     df["language"] = df["abstract"].apply(detect_language)
     df["topic"] = df["abstract"].apply(classify_topic)
@@ -109,6 +110,7 @@ def create_consistent_summary_row(date_str, df):
 
     return row
 
+@task
 def update_summary_csv(df, date_str, csv_path="daily_summary.csv"):
     new_row = create_consistent_summary_row(date_str, df)
 
@@ -120,6 +122,7 @@ def update_summary_csv(df, date_str, csv_path="daily_summary.csv"):
 
     summary.to_csv(csv_path, index=False)
 
+@task
 def push_to_github(date_str):
     try:
         load_dotenv()
