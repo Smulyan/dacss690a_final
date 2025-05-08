@@ -2,19 +2,19 @@ import subprocess
 import sys
 import os
 
-def install_requirements():
-    try:
-        req_file = "requirements.txt"
-        if os.path.exists(req_file):
-            print("Installing requirements from requirements.txt...")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
-        else:
-            print("No requirements.txt found; skipping package installation.")
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to install requirements: {e}")
-        sys.exit(1)
-
-install_requirements()
+# def install_requirements():
+#     try:
+#         req_file = "requirements.txt"
+#         if os.path.exists(req_file):
+#             print("Installing requirements from requirements.txt...")
+#             subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+#         else:
+#             print("No requirements.txt found; skipping package installation.")
+#     except subprocess.CalledProcessError as e:
+#         print(f"Failed to install requirements: {e}")
+#         sys.exit(1)
+#
+# install_requirements()
 
 import requests
 import numpy as np
