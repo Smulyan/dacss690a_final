@@ -9,3 +9,5 @@ jsonschema
 datetime
 python-dotenv
 prefect==3.4.0
+plotly
+streamlit
