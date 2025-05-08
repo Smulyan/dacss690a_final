@@ -123,7 +123,7 @@ def update_summary_csv(df, date_str, csv_path="daily_summary.csv"):
 def push_to_github(date_str):
     try:
         load_dotenv()
-        GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+        GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
         GITHUB_REPO = "github.com/Smulyan/dacss690a_final.git"
         REPO_DIR = "/Users/shaynsmulyan/PycharmProjects/dacss690a_final"
 
