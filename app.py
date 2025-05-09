@@ -130,7 +130,7 @@ def push_to_github(date_str):
         load_dotenv()
         GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
         GITHUB_REPO = "github.com/Smulyan/dacss690a_final.git"
-        REPO_DIR = "/Users/shaynsmulyan/PycharmProjects/dacss690a_final"
+        REPO_DIR = os.getcwd()
 
         if not GITHUB_TOKEN:
             raise ValueError("GitHub token not found in environment variables.")
