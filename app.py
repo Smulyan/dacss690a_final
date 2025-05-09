@@ -110,19 +110,21 @@ def create_consistent_summary_row(date_str, df):
 
     return row
 
-@task
+@task(log_prints=True)
 def update_summary_csv(df, date_str, csv_path="daily_summary.csv"):
     new_row = create_consistent_summary_row(date_str, df)
 
     if os.path.exists(csv_path):
         summary = pd.read_csv(csv_path)
         summary = pd.concat([summary, pd.DataFrame([new_row])], ignore_index=True)
+        print("os path exists")
     else:
         summary = pd.DataFrame([new_row])
+        print("os path doesn't exist")
 
     summary.to_csv(csv_path, index=False)
 
-@task
+@task(log_prints=True)
 def push_to_github(date_str):
     try:
         load_dotenv()
