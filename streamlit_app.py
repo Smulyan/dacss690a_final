@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 # Load the data
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_data():
     df = pd.read_csv("https://raw.githubusercontent.com/Smulyan/dacss690a_final/main/daily_summary.csv", parse_dates=["date"])
     return df
