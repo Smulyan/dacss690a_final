@@ -10,7 +10,7 @@ def load_data():
 
 df = load_data()
 
-st.title("Crossref Daily Summary Dashboard")
+st.title("Subject and Language Trends in Crossref Abstracts")
 
 # Sidebar filters
 st.sidebar.header("Filter options")
