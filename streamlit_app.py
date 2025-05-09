@@ -11,6 +11,7 @@ def load_data():
 df = load_data()
 
 st.title("Subject and Language Trends in Crossref Abstracts")
+st.title("Daily classification using spaCy NLP")
 
 # Sidebar filters
 st.sidebar.header("Filter options")
