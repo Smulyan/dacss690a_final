@@ -70,7 +70,7 @@ with tab1:
     # Always use "Total Count" as label
     fig3 = px.bar(df_total_subject, x="Subject", y="Value")
     fig3.update_layout(yaxis_title="Total Count")
-    st.plotly_chart(fig4, use_container_width=True)
+    st.plotly_chart(fig3, use_container_width=True)
 
 # --- Languages Tab ---
 with tab2:
