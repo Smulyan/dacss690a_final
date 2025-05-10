@@ -61,14 +61,15 @@ with tab1:
 
     st.subheader("📊 Subject Area Distribution (Total)")
 
-    df_total_subject = df[subject_cols].sum().reset_index()
+    # Force raw count columns, regardless of value_type
+    subject_totals = df[[col for col in subject_base]]  # no _pct
+    df_total_subject = subject_totals.sum().reset_index()
     df_total_subject.columns = ["Subject", "Value"]
-    df_total_subject["Subject"] = df_total_subject["Subject"].str.replace("_pct", "", regex=False).str.title()
-    df_total_subject = df_total_subject.sort_values("Value", ascending=False)
+    df_total_subject["Subject"] = df_total_subject["Subject"].str.title()
 
+    # Always use "Total Count" as label
     fig3 = px.bar(df_total_subject, x="Subject", y="Value")
-    fig3.update_layout(yaxis_title="%" if value_type == "Percentages" else "Total Count")
-    st.plotly_chart(fig3, use_container_width=True)
+    fig3.update_layout(yaxis_title="Total Count")
 
 # --- Languages Tab ---
 with tab2:
@@ -83,11 +84,14 @@ with tab2:
 
     st.subheader("📊 Language Distribution (Total)")
 
-    df_total_lang = df[lang_cols].sum().reset_index()
+    # Force raw count columns, regardless of value_type
+    lang_totals = df[[col for col in base_langs]]
+    df_total_lang = lang_totals.sum().reset_index()
     df_total_lang.columns = ["Language", "Value"]
-    df_total_lang["Language"] = df_total_lang["Language"].str.replace("_pct", "", regex=False).str.upper()
+    df_total_lang["Language"] = df_total_lang["Language"].str.upper()
     df_total_lang = df_total_lang[df_total_lang["Value"] > 0].sort_values("Value", ascending=False)
 
+    # Always use "Total Count" as label
     fig4 = px.bar(df_total_lang, x="Language", y="Value")
-    fig4.update_layout(yaxis_title="%" if value_type == "Percentages" else "Total Count")
+    fig4.update_layout(yaxis_title="Total Count")
     st.plotly_chart(fig4, use_container_width=True)
